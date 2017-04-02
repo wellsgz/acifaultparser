@@ -19,6 +19,7 @@ def main():
         faultInfo = open('faultInfo.xml','r').read()
         faultInfoParse(None,None,None,faultInfo)
     else:
+        print 'Can not find faultInfo in current path, please specify APIC information to retrieve it...'
         args = get_args()
         apic = 'https://'+args.host+'/'
         username = args.user
