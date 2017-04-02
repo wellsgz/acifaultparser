@@ -1,3 +1,7 @@
+'''
+Written by Wei Zixi (ziwei@cisco.com)
+'''
+
 #!/usr/bin/env python
 
 import os
