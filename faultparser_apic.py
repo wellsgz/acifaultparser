@@ -53,8 +53,6 @@ def get_args():
 
 def faultInfoParse(apic=None,username=None,password=None,faultInfo=None):
     
-    print apic,username,password,faultInfo
-
     if faultInfo == None:
         # Login to APIC and get cookies
         print 'Logging into APIC to retrieve faultInfo...'
