@@ -1,10 +1,11 @@
+#!/usr/bin/env python
+
 '''
 Written by Wei Zixi (ziwei@cisco.com)
 '''
 
-#!/usr/bin/env python
-
 import os
+import argparse
 import requests
 import xlsxwriter
 import xml.etree.ElementTree as ET
@@ -12,27 +13,65 @@ import xml.etree.ElementTree as ET
 # Disable ssl warning
 requests.packages.urllib3.disable_warnings()
 
-def faultInfoParse():
+def main():
+    if os.path.isfile('faultInfo.xml'):
+        print "Found 'faultInfo.xml' in current path, creating fault parse spreadsheet'"
+        faultInfo = open('faultInfo.xml','r').read()
+        faultInfoParse(None,None,None,faultInfo)
+    else:
+        args = get_args()
+        apic = 'https://'+args.host+'/'
+        username = args.user
+        password = args.password
+        if args == None:
+            print "'faultInfo' is missing from current path, please specify APIC to connect to"
+        faultInfoParse(apic,username,password,None)
 
-    # APIC and credential
-    apic = 'https://10.74.205.110/'
-    username = 'admin'
-    password = 'C1sc0123'
-    
-    # Login to APIC and get cookies
-    apicSession = requests.Session()
-    apicSession.verify = False
-    
-    loginUrl = apic+'api/aaaLogin.xml'
-    loginData = '<aaaUser name="'+username+'" pwd="'+password+'" />'
-    apicSession.post(loginUrl,data=loginData,verify=False)
-    
-    # Get faultInfo
-    faultInfo = apicSession.get(apic+'api/node/class/faultInfo.xml').text
+def get_args():
+    parser = argparse.ArgumentParser(
+        description='Connect to APIC controller')
 
-    # Set filename
-    fabricName=ET.fromstring(apicSession.get(apic+'/api/node/mo/topology/pod-1/node-1.xml?query-target=children&target-subtree-class=topSystem').text)[0].get('fabricDomain')
-    fileName = fabricName+' Fault Log Parse.xlsx'
+    parser.add_argument('-s', '--host',
+                        required=True,
+                        action='store',
+                        help='APIC controller to connect to')
+
+    parser.add_argument('-u', '--user',
+                        required=True,
+                        action='store',
+                        help='APIC username')
+
+    parser.add_argument('-p', '--password',
+                        required=False,
+                        action='store',
+                        help='APIC password')
+
+    args = parser.parse_args()
+
+    return args
+
+def faultInfoParse(apic=None,username=None,password=None,faultInfo=None):
+    
+    print apic,username,password,faultInfo
+
+    if faultInfo == None:
+        # Login to APIC and get cookies
+        print 'Logging into APIC to retrieve faultInfo...'
+        apicSession = requests.Session()
+        apicSession.verify = False
+        
+        loginUrl = apic+'api/aaaLogin.xml'
+        loginData = '<aaaUser name="'+username+'" pwd="'+password+'" />'
+        apicSession.post(loginUrl,data=loginData)
+        
+        # Get faultInfo
+        faultInfo = apicSession.get(apic+'api/node/class/faultInfo.xml').text
+
+        # Set filename
+        fabricName=ET.fromstring(apicSession.get(apic+'/api/node/mo/topology/pod-1/node-1.xml?query-target=children&target-subtree-class=topSystem').text)[0].get('fabricDomain')
+        fileName = fabricName+' Fault Log Parse.xlsx'
+    else:
+        fileName = 'Fault Log Parse.xlsx'
     
     # Create excel workbook
     workbook = xlsxwriter.Workbook(fileName,{'strings_to_numbers': True})
@@ -45,6 +84,7 @@ def faultInfoParse():
         os.remove(fileName)
 
     # Parse faultInfo
+    print 'Parsing faultInfo...'
     root = ET.fromstring(faultInfo)
     
     # Create index
@@ -72,5 +112,7 @@ def faultInfoParse():
             col += 1
         
             #print code+','+occur+','+faultType+','+subject+','+cause+','+descr+','+rule+','+domain+','+dn+','+changeset+','+childAction+','+created+','+delegated+','+severity+','+origSeverity+','+highestSeverity+','+lastTransition+','+ack
+    print "Fault parsed as '"+fileName+"'."
 
-faultInfoParse()
+if __name__ == "__main__":
+    main()
