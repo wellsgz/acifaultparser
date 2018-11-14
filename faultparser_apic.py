@@ -112,6 +112,9 @@ def faultInfoParse(apic=None,username=None,password=None,faultInfo=None):
         
             #print code+','+occur+','+faultType+','+subject+','+cause+','+descr+','+rule+','+domain+','+dn+','+changeset+','+childAction+','+created+','+delegated+','+severity+','+origSeverity+','+highestSeverity+','+lastTransition+','+ack
     print "Fault parsed as '"+fileName+"'."
+    
+    # Close workbook
+    workbook.close()
 
 if __name__ == "__main__":
     main()
